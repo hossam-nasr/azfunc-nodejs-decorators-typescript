@@ -38,9 +38,14 @@ export default class FunctionApp {
         }
 
         const newHandler = async (context: InvocationContext, trigger: unknown): Promise<any> => {
+            if (typeof functionInfo.trigger?.index === 'undefined') {
+                throw new Error(
+                    `There was a problem in accessing the trigger for function ${functionName}. Please check your trigger definitions.`
+                );
+            }
             const resolvedBindings = [
                 { index: 0, value: context },
-                { index: functionInfo.trigger!.index, value: trigger },
+                { index: functionInfo.trigger.index, value: trigger },
             ];
             if (functionInfo.extraInputs) {
                 functionInfo.extraInputs.map((input) => {
