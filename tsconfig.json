@@ -2,11 +2,14 @@
     "compilerOptions": {
         "module": "commonjs",
         "target": "es6",
-        "experimentalDecorators": true,
-        "outDir": "dist",
-        "rootDir": ".",
+        "noImplicitAny": false,
+        "strict": true,
+        "noUnusedLocals": true,
+        "outDir": "out",
         "sourceMap": true,
-        "strict": false,
-        "baseUrl": "./"
+        "baseUrl": "./",
+        "paths": {
+            "azure-functions-decorators-typescript": ["types"]
+        }
     }
 }

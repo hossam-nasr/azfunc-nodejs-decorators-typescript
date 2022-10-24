@@ -1,5 +1,8 @@
-import { app, FunctionOutput, InvocationContext } from "@azure/functions";
-import { FunctionHandler, FunctionInfo, Input, Output, Trigger } from "./types";
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License.
+
+import { app, FunctionOutput, InvocationContext } from '@azure/functions';
+import { FunctionHandler, FunctionInfo, Input, Output, Trigger } from 'azure-functions-decorators-typescript';
 
 export default class FunctionApp {
     private static functions: Map<string, FunctionInfo> = new Map<string, FunctionInfo>();
@@ -11,7 +14,7 @@ export default class FunctionApp {
             };
             return;
         }
-        const functionInfo = FunctionApp.functions[functionName];
+        const functionInfo: FunctionInfo = FunctionApp.functions[functionName] as FunctionInfo;
         if (functionInfo.trigger) {
             throw new Error(
                 `A trigger was already defined for the function ${functionName}. A function must have only one trigger.`
@@ -21,15 +24,23 @@ export default class FunctionApp {
     }
 
     static registerFunction(functionId: string, functionHandler: FunctionHandler, overridingFunctionName?: string) {
-        const functionInfo: FunctionInfo = FunctionApp.functions[functionId];
+        const functionName = overridingFunctionName || functionId;
+
+        const functionInfo: FunctionInfo = FunctionApp.functions[functionId] as FunctionInfo;
         if (!functionInfo || !functionInfo.trigger) {
-            throw new Error('no trigger is defined for this function');
+            throw new Error(`Error registering function ${functionName}: no trigger is defined for this function`);
         }
 
-        const newHandler = async (context: InvocationContext, trigger: any): Promise<any> => {
+        if (typeof functionInfo.trigger?.index === 'undefined') {
+            throw new Error(
+                `There was a problem in configuring the trigger for function ${functionName}. Please check your trigger definition.`
+            );
+        }
+
+        const newHandler = async (context: InvocationContext, trigger: unknown): Promise<any> => {
             const resolvedBindings = [
                 { index: 0, value: context },
-                { index: functionInfo.trigger.index, value: trigger },
+                { index: functionInfo.trigger!.index, value: trigger },
             ];
             if (functionInfo.extraInputs) {
                 functionInfo.extraInputs.map((input) => {
@@ -50,19 +61,19 @@ export default class FunctionApp {
 
             resolvedBindings.sort((a, b) => a.index - b.index);
             const args = resolvedBindings.map(({ value }) => value);
-            return functionHandler.call(null, ...args);
+            // @ts-ignore spread arguments
+            return (await functionHandler(...args)) as unknown;
         };
 
-        const functionName = overridingFunctionName || functionId;
         app.generic(functionName, {
             handler: newHandler,
-            trigger: functionInfo.trigger!!,
+            trigger: functionInfo.trigger,
             ...functionInfo,
         });
     }
 
     static setReturnValue(functionName: string, returnOptions: FunctionOutput) {
-        const functionInfo: FunctionInfo = FunctionApp.functions[functionName];
+        const functionInfo: FunctionInfo = FunctionApp.functions[functionName] as FunctionInfo;
         if (functionInfo) {
             functionInfo.return = returnOptions;
             return;
@@ -73,12 +84,12 @@ export default class FunctionApp {
     }
 
     static hasReturnValue(functionName: string) {
-        const functionInfo: FunctionInfo = FunctionApp.functions[functionName];
+        const functionInfo: FunctionInfo = FunctionApp.functions[functionName] as FunctionInfo;
         return typeof functionInfo.return !== 'undefined';
     }
 
     static addInput(functionName: string, inputOptions: Input) {
-        const functionInfo: FunctionInfo = FunctionApp.functions[functionName];
+        const functionInfo: FunctionInfo = FunctionApp.functions[functionName] as FunctionInfo;
         if (functionInfo) {
             if (functionInfo.extraInputs) {
                 functionInfo.extraInputs.push(inputOptions);
@@ -93,7 +104,7 @@ export default class FunctionApp {
     }
 
     static addOutput(functionName: string, outputOptions: Output) {
-        const functionInfo: FunctionInfo = FunctionApp.functions[functionName];
+        const functionInfo: FunctionInfo = FunctionApp.functions[functionName] as FunctionInfo;
         if (functionInfo) {
             if (functionInfo.extraOutputs) {
                 functionInfo.extraOutputs.push(outputOptions);

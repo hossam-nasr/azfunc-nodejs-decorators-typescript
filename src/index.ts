@@ -1,34 +1,72 @@
-import { HttpRequest, InvocationContext, Timer } from '@azure/functions';
-import { azureFunction, blobInput, blobOutput, http, queueTrigger, timer } from '../framework';
+// Copyright (c) .NET Foundation. All rights reserved.
+// Licensed under the MIT License.
 
-class FunctionApp {
-    @azureFunction()
-    async testHttpTrigger(context: InvocationContext, @http() request: HttpRequest) {
-        context.log(`Http function processed request for url "${request.url}"`);
+import { FunctionOutput, trigger as azFuncTrigger } from '@azure/functions';
+import { FunctionHandler, TimerOptions } from 'azure-functions-decorators-typescript';
+import FunctionApp from './FunctionApp';
 
-        const name = request.query.get('name') || (await request.text()) || 'world';
+export * from './cosmosdb';
+export * from './http';
+export * from './storage';
 
-        return {
-            body: `Hello, ${name}`,
-        };
-    }
-
-    @azureFunction()
-    async timerTrigger1(context: InvocationContext, @timer('0 */5 * * * *') myTimer: Timer) {
-        var timestamp = new Date().toISOString();
-        context.log('The current time is: ', timestamp);
-    }
-
-    @azureFunction('customFunctionName')
-    async copyBlob1(
-        context: InvocationContext,
-        @queueTrigger('copyblobqueue', 'storage_APPSETTING' ) queueItem: unknown,
-        @blobInput('helloworld/{queueTrigger}', 'storage_APPSETTING') blobInput: unknown,
-        @blobOutput('helloworld/{queueTrigger}-copy', 'storage_APPSETTING') blobOutput: any
-    ): Promise<void> {
-        context.log('Storage queue function processes work item: ', queueItem);
-        blobOutput.set(blobInput);
-    }
+export function timer(schedule: string, options?: TimerOptions) {
+    return function (target: any, propertyKey: string | symbol, index: number) {
+        const functionName = propertyKey.toString();
+        const timerOptions = { index, ...azFuncTrigger.timer({ schedule, ...options }) };
+        FunctionApp.addTrigger(functionName, timerOptions);
+    };
 }
 
-export default FunctionApp;
+export function azureFunction(name?: string) {
+    return function (target: any, propertyKey: string, descriptor: PropertyDescriptor) {
+        const functionId = propertyKey;
+        const functionHandler = descriptor.value as FunctionHandler;
+        FunctionApp.registerFunction(functionId, functionHandler, name);
+    };
+}
+
+export function returns(options: FunctionOutput) {
+    return function (target: any, propertyKey: string, _descriptor: PropertyDescriptor) {
+        const functionName = propertyKey;
+        FunctionApp.setReturnValue(functionName, options);
+    };
+}
+
+export function trigger(type: string, options: Record<string, unknown> = {}) {
+    return function (target: any, propertyKey: string | symbol, index: number) {
+        const functionName = propertyKey.toString();
+        const trigger = {
+            type,
+            name: functionName + index.toString(),
+            index,
+            ...options,
+        };
+        FunctionApp.addTrigger(functionName, trigger);
+    };
+}
+
+export function input(type: string, options: Record<string, unknown> = {}) {
+    return function (target: any, propertyKey: string | symbol, index: number) {
+        const functionName = propertyKey.toString();
+        const input = {
+            type,
+            name: functionName + index.toString(),
+            index,
+            ...options,
+        };
+        FunctionApp.addInput(functionName, input);
+    };
+}
+
+export function output(type: string, options: Record<string, unknown> = {}) {
+    return function (target: any, propertyKey: string | symbol, index: number) {
+        const functionName = propertyKey.toString();
+        const outputOptions = {
+            type,
+            name: functionName + index.toString(),
+            index,
+            ...options,
+        };
+        FunctionApp.addOutput(functionName, outputOptions);
+    };
+}
