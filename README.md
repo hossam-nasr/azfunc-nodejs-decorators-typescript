@@ -34,29 +34,31 @@ If you are creating your own app, the instructions you need to follow to run an 
 
 You can now define your functions using TypeScript decorators! Below are a few examples:
 
+#### Simple HTTP trigger function: 
+
 <table>
 <tr>
-<th> Function </th>
-<th> Default (`@azure/functions` v3) </th>
-<th> Decorators </th>
+<th> Default </th>
+<th> Decorators! </th>
 </tr>
 <tr />
 <tr>
-<td> Simple HTTP trigger function </td>
 <td>
 
 `src/HttpTrigger1/index.ts`:
 
-```TS
-module.exports = async function(context: Context, req: HttpRequest) {
-    context.log(`HTTP function processed request for url "${req.url}"`);
+```JS
+module.exports = async function(context, req) {
+    context.log("HTTP function processed request");
 
-    const name = req.query.name || req.body || 'world';
+    const name = req.query.name 
+        || req.body 
+        || 'world';
 
     context.res - {
         body: `Hello, ${name}!`
     };
-}
+};
 ```
 
 `src/HttpTrigger1/function.json`:
@@ -82,19 +84,26 @@ module.exports = async function(context: Context, req: HttpRequest) {
   ]
 }
 ```
-</td>
 
+</td>
 <td>
 
 `src/index.ts`:
 
 ```TS
+import { 
+    azureFunction, 
+    http 
+} from 'azure-functions-decorators-typescript'
+
 class FunctionApp {
     @azureFunction()
-    async httpTrigger1(context: InvocationContext, @http() request: HttpRequest) {
-        context.log(`Http function processed request for url "${request.url}"`);
+    async httpTrigger1(context, @http() request) {
+        context.log("Http function processed request");
 
-        const name = request.query.get('name') || (await request.text()) || 'world';
+        const name = request.query.get('name') 
+            || (await request.text()) 
+            || 'world';
 
         return {
             body: `Hello, ${name}`,
@@ -104,39 +113,226 @@ class FunctionApp {
 
 export default FunctionApp
 ```
-
-`src/function.json`:
-
-✨ Nothing ✨
 </td>
+</ tr>
+</table>
 
-</tr>
+#### Setting an extra blob input:
 
+<table>
 <tr>
- <td >Setting an extra blob input</td>
-
- <td >
-
-    `src/MyFunction/index.ts`:
-    
-    ```TS
-        sdf
-    ```
-
-    `src/MyFunction/function.json`
-
- </td>
-
- <td>
-
- </td>
+<th> Default </th>
+<th> Decorators! </th>
 </tr>
-
+<tr />
 <tr>
-    <td>Setting an extra queue output</td>
+<td>
+
+`src/MyFunction/index.ts`:
+
+```JS
+module.exports = async function(context, req) {
+    context.log("HTTP function processed request");
+
+    const name = context.bindings.blobInput;
+
+    context.res = {
+        body: `Hello, ${name}!`
+    };
+};
+```
+
+`src/HttpTrigger1/function.json`:
+
+```json
+{
+  "bindings": [
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get",
+        "post"
+      ]
+    },
+    {
+      "type": "blob",
+      "name": "blobInput",
+      "direction": "in",
+      "path": "helloworld/{name}"
+      "connection": "storage_conn"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ]
+}
+```
+
+</td>
+<td>
+
+`src/index.ts`:
+
+```TS
+import { 
+    azureFunction, 
+    http,
+    blobInput
+} from 'azure-functions-decorators-typescript'
+
+class FunctionApp {
+    @azureFunction()
+    async httpTrigger1(
+        context, 
+        @http() request, 
+        @blobInput('helloworld/{name}', 'storage_conn') blobInput
+    ) {
+        context.log("Http function processed request");
+
+        const name = blobInput;
+
+        return {
+            body: `Hello, ${name}`,
+        };
+    }
+}
+
+export default FunctionApp
+```
+</td>
+</ tr>
+</table>
+
+#### Setting an extra queue output:
+
+<table>
+<tr>
+<th> Default </th>
+<th> Decorators! </th>
 </tr>
+<tr />
+<tr>
+<td>
+
+`src/MyFunction/index.ts`:
+
+```JS
+module.exports = async function(context, req) {
+    context.log("HTTP function processed request");
+
+    const name = req.query.name 
+        || req.body 
+        || 'world';
+        
+    context.bindings.queueOut = name;
+
+    context.res = {
+        body: `Hello, ${name}!`
+    };
+};
+```
+
+`src/HttpTrigger1/function.json`:
+
+```json
+{
+  "bindings": [
+    {
+      "authLevel": "anonymous",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": [
+        "get",
+        "post"
+      ]
+    },
+    {
+      "type": "queue",
+      "name": "queueOut",
+      "direction": "output",
+      "queueName": "helloworld"
+      "connection": "storage_conn"
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ]
+}
+```
+
+</td>
+<td>
+
+`src/index.ts`:
+
+```TS
+import { 
+    azureFunction, 
+    http,
+    queueOutput
+} from 'azure-functions-decorators-typescript'
+
+class FunctionApp {
+    @azureFunction()
+    async httpTrigger1(
+        context, 
+        @http() request, 
+        @queueOutput('helloworld', 'storage_conn') queueOut
+    ) {
+        context.log("Http function processed request");
+
+        const name = request.query.get('name') 
+            || (await request.text()) 
+            || 'world';
+        
+        queueOut.set(name);
+
+        return {
+            body: `Hello, ${name}`,
+        };
+    }
+}
+
+export default FunctionApp
+```
+</td>
+</ tr>
 </table>
 
 ### Supported triggers and bindings
 
-As this is just a 
+As this is just a hackathon project at the moment, most triggers and bindings do not have their own custom decorators. Below is a list of the available triggers and bindings and their supported state. This list will be updated when/if more triggers and bindings are added. The list of all available triggers and bindings was retrieved from the Microsoft docs [here](https://learn.microsoft.com/en-us/azure/azure-functions/functions-triggers-bindings?tabs=javascript#supported-bindings)
+
+|Type|Trigger|Input|Output|
+|---|---|---|---|
+HTTP | ✅ | | ❌ 
+Timer | ✅ | | |
+Storage blob | ✅ | ✅ | ✅
+Storage queue | ✅ | | ✅
+CosmosDB | ✅ | ❌ | ❌
+Azure SQL |  | ❌ | ❌
+Dapr | ❌ | ❌ | ❌
+Event Grid | ❌ |  | ❌
+Event Hubs | ❌ |  | ❌
+IoT Hub | ❌ |  | 
+Kafka | ❌ |  | ❌
+Mobile Apps |  | ❌ | ❌
+Notification Hubs |  |  | ❌
+RabbitMQ | ❌ |  | ❌
+SendGrid |  |  | ❌
+Service Bus | ❌ |  | ❌
+SignalR | ❌ | ❌ | ❌
+Table storage |  | ❌ | ❌
+Twilio |  |  | ❌
+
+### Generic triggers, inputs, and outputs
+
+
