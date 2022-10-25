@@ -307,7 +307,7 @@ export default FunctionApp
 </ tr>
 </table>
 
-### Supported triggers and bindings
+## Supported triggers and bindings
 
 As this is just a hackathon project at the moment, most triggers and bindings do not have their own custom decorators. Below is a list of the available triggers and bindings and their supported state. This list will be updated when/if more triggers and bindings are added. The list of all available triggers and bindings was retrieved from the Microsoft docs [here](https://learn.microsoft.com/en-us/azure/azure-functions/functions-triggers-bindings?tabs=javascript#supported-bindings)
 
@@ -333,7 +333,7 @@ SignalR | ❌ | ❌ | ❌
 Table storage |  | ❌ | ❌
 Twilio |  |  | ❌
 
-### Generic triggers, inputs, and outputs
+## Generic triggers, inputs, and outputs
 
 Even for the triggers and bindings that are not explicitly supported in this library, they can still be registered using the generic `@trigger`, `@input`, `@output` and `@returns` decorators. Below is an example of a function that uses all 4 of these to illustrate how they work:
 
