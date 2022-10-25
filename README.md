@@ -335,4 +335,31 @@ Twilio |  |  | ❌
 
 ### Generic triggers, inputs, and outputs
 
+Even for the triggers and bindings that are not explicitly supported in this library, they can still be registered using the generic `@trigger`, `@input`, `@output` and `@returns` decorators. Below is an example of a function that uses all 4 of these to illustrate how they work:
+
+```TS
+import { HttpResponse, InvocationContext, output as AzFuncOutput } from '@azure/functions';
+import { azureFunction, input, output, returns, trigger } from 'azure-functions-decorators-typescript';
+
+class FunctionApp {
+    @azureFunction()
+    @returns(AzFuncOutput.http({}))
+    async copyBlob1(
+        context: InvocationContext,
+        @trigger('queueTrigger', { queueName: 'copyblobqueue', connection: 'storage_APPSETTING' }) queueItem: unknown,
+        @input('blob', { path: 'helloworld/{queueTrigger}', connection: 'storage_APPSETTING' }) blobInput: unknown,
+        @output('blob', { path: 'helloworld/{queueTrigger}-copy', connection: 'storage_APPSETTING' }) blobOutput: any
+    ): Promise<HttpResponse> {
+        context.log('Storage queue function processes work item: ', queueItem);
+
+        blobOutput.set(blobInput);
+
+        return {
+            body: `Successfully copied ${queueItem}`,
+        };
+    }
+}
+
+export default FunctionApp;
+```
 
