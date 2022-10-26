@@ -142,7 +142,7 @@ module.exports = async function(context, req) {
 };
 ```
 
-`src/HttpTrigger1/function.json`:
+`src/MyFunction/function.json`:
 
 ```json
 {
@@ -237,7 +237,7 @@ module.exports = async function(context, req) {
 };
 ```
 
-`src/HttpTrigger1/function.json`:
+`src/MyFunction/function.json`:
 
 ```json
 {
