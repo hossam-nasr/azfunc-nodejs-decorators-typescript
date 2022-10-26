@@ -55,7 +55,7 @@ module.exports = async function(context, req) {
         || req.body 
         || 'world';
 
-    context.res - {
+    context.res = {
         body: `Hello, ${name}!`
     };
 };
